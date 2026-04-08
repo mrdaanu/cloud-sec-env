@@ -1,4 +1,3 @@
-from env.parser import parse_action
 from env.tasks import load_task
 from env.models import Observation, Resource
 
@@ -11,7 +10,6 @@ class CloudEnv:
     def reset(self, level="easy"):
         task = load_task(level)
 
-        # Create resources
         resources = [
             Resource(
                 id=r["id"],
@@ -33,7 +31,6 @@ class CloudEnv:
         else:
             expected_action = "unknown"
 
-        # State
         self.state = {
             "resources": resources,
             "issues_found": [],
@@ -51,31 +48,44 @@ class CloudEnv:
 
     def step(self, action_text):
 
-        # ✅ IMPORTANT: indentation fixed here
+        # ✅ FIXED INDENTATION (THIS WAS YOUR MAIN ERROR)
         if self.state is None:
             raise Exception("Call /reset before /step")
 
         self.state["step_count"] += 1
 
-        action = parse_action(action_text)
+        action_text = action_text.lower()
         expected = self.state["expected_action"]
 
         reward = 0.0
 
-        # FIX PHASE
+        # 🔧 FIX PHASE
         if not self.state["fixed"]:
-            if action == expected:
+
+            if expected == "fix_s3" and "s3" in action_text:
                 self.state["fixed"] = True
                 self.state["issues_found"].append("fixed")
                 reward = 0.7
-            elif action != "unknown":
+
+            elif expected == "fix_ec2" and ("port" in action_text or "ssh" in action_text):
+                self.state["fixed"] = True
+                self.state["issues_found"].append("fixed")
+                reward = 0.7
+
+            elif expected == "fix_iam" and "iam" in action_text:
+                self.state["fixed"] = True
+                self.state["issues_found"].append("fixed")
+                reward = 0.7
+
+            elif any(word in action_text for word in ["s3", "port", "iam"]):
                 reward = 0.3
+
             else:
                 reward = -0.1
 
-        # VERIFY PHASE
+        # 🔍 VERIFY PHASE
         elif self.state["fixed"] and not self.state["verified"]:
-            if action == "verify":
+            if "verify" in action_text:
                 self.state["verified"] = True
                 reward = 1.0
             else:
