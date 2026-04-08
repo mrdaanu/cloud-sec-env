@@ -1,16 +1,13 @@
-def parse_action(action_text):
-    return action_text.lower().strip()
+def parse_action(action_text: str):
+    action_text = action_text.lower()
 
-    # S3 detection
-    if "s3" in text or "bucket" in text or "public" in text:
-        return "fix_s3_public"
+    if "s3" in action_text:
+        return "fix_s3"
 
-    # EC2 detection
-    elif "port" in text or "ssh" in text:
-        return "close_port"
+    elif "port" in action_text or "ssh" in action_text:
+        return "fix_ec2"
 
-    # IAM detection
-    elif "iam" in text or "policy" in text or "permission" in text:
+    elif "iam" in action_text or "policy" in action_text:
         return "fix_iam"
 
     return "unknown"

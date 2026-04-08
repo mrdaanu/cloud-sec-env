@@ -1,6 +1,11 @@
 def grade_action(action, expected):
-    action = action.lower()
+    if action == expected:
+        return 1.0
 
+    elif action != "unknown":
+        return 0.5
+
+    return 0.0
     # EASY: S3 bucket
     if expected == "fix_s3":
         if "s3" in action and "private" in action:
