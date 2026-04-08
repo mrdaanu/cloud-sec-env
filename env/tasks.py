@@ -1,32 +1,37 @@
 import json
+import os
 
 
-def load_task(level):
+def load_task(level: str):
+    """
+    Loads a task based on difficulty level (easy, medium, hard)
 
-    if level == "easy":
-        return {
-            "resources": [
-                {"id": "s3_1", "type": "s3", "config": {"public": True}},
-                {"id": "ec2_1", "type": "ec2", "config": {"port_22_open": True}}
-            ],
-            "expected_actions": ["fix_s3", "fix_ec2"]
-        }
+    Ensures:
+    - task structure is valid
+    - required fields exist (expected_action, grader)
+    """
 
-    elif level == "medium":
-        return {
-            "resources": [
-                {"id": "ec2_1", "type": "ec2", "config": {"port_22_open": True}},
-                {"id": "iam_1", "type": "iam", "config": {"admin_access": True}}
-            ],
-            "expected_actions": ["fix_ec2", "fix_iam"]
-        }
+    file_path = os.path.join("data", f"{level}.json")
 
-    elif level == "hard":
-        return {
-            "resources": [
-                {"id": "s3_1", "type": "s3", "config": {"public": True}},
-                {"id": "ec2_1", "type": "ec2", "config": {"port_22_open": True}},
-                {"id": "iam_1", "type": "iam", "config": {"admin_access": True}}
-            ],
-            "expected_actions": ["fix_s3", "fix_ec2", "fix_iam"]
-        }
+    if not os.path.exists(file_path):
+        raise Exception(f"Task file not found: {file_path}")
+
+    with open(file_path, "r") as f:
+        task = json.load(f)
+
+    # ✅ REQUIRED FIELDS (validator expects this)
+    required_fields = ["resources", "expected_action", "grader"]
+
+    for field in required_fields:
+        if field not in task:
+            raise Exception(f"Task missing required field: {field}")
+
+    # ✅ Ensure at least 1 resource exists
+    if not isinstance(task["resources"], list) or len(task["resources"]) == 0:
+        raise Exception("Task must contain at least one resource")
+
+    # ✅ Normalize structure (safe for validator)
+    task["task_id"] = task.get("task_id", level)
+    task["difficulty"] = level
+
+    return task
