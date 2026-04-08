@@ -25,7 +25,7 @@ class CloudEnv:
             "resources": resources,
             "issues_found": [],
             "step_count": 0,
-            "expected_action": task["expected_action"]
+            "expected_actions": task["expected_actions"]
         }
 
         return Observation(
@@ -42,17 +42,25 @@ class CloudEnv:
         self.state["step_count"] += 1
 
         action = parse_action(action_text)
-        expected = self.state["expected_action"]
+        expected_actions = self.state["expected_actions"]
 
-        reward = grade_action(action, expected)
+        reward = 0.0
 
-        if reward == 1.0:
-            self.state["issues_found"].append("fixed")
+        # ✅ reward for correct new fix
+        if action in expected_actions:
+            reward = 1.0
+            expected_actions.remove(action)
+            self.state["issues_found"].append(action)
 
-        if reward == 0.0:
+        # ⚠️ partial correct
+        elif action != "unknown":
+            reward = 0.3
+
+        # ❌ wrong
+        else:
             reward = -0.1
 
-        done = reward == 1.0 or self.state["step_count"] >= 5
+        done = len(expected_actions) == 0 or self.state["step_count"] >= 6
 
         observation = Observation(
             resources=self.state["resources"],
@@ -61,6 +69,3 @@ class CloudEnv:
         )
 
         return observation, reward, done, {}
-
-    def state(self):
-        return self.state
