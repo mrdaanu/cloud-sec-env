@@ -1,15 +1,14 @@
 ---
-
 title: Cloud Security Fixer
-emoji: 🌍
+emoji: "🌍"
 colorFrom: blue
 colorTo: green
 sdk: docker
+---
 
-☁️ Cloud Security Misconfiguration Environment
+# ☁️ Cloud Security Misconfiguration Environment
 
-🚀 Overview
-
+## 🚀 Overview
 This project is my attempt to build something practical instead of a typical toy environment.
 
 I created a cloud security simulation where an AI agent interacts with common real-world issues like exposed storage, open ports, and risky IAM permissions. The goal is simple — the agent should understand the problem, fix it, and then verify that the fix actually worked.
