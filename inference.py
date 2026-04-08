@@ -2,21 +2,20 @@ import asyncio
 from env.environment import CloudEnv
 
 
-def decide_action(observation, already_fixed):
+def decide_action(observation):
     resources = observation["resources"]
 
     for r in resources:
-
-        if r["type"] == "s3" and "fix_s3" not in already_fixed:
+        if r["type"] == "s3":
             return "Make S3 bucket private"
 
-        elif r["type"] == "ec2" and "fix_ec2" not in already_fixed:
+        elif r["type"] == "ec2":
             return "Close port 22"
 
-        elif r["type"] == "iam" and "fix_iam" not in already_fixed:
+        elif r["type"] == "iam":
             return "Apply least privilege IAM policy"
 
-    return "No action"
+    return "Verify fix"
 
 
 async def run_task(level):
@@ -28,23 +27,15 @@ async def run_task(level):
     rewards = []
     done = False
 
-    fixed = []
-
-    while not done and steps < 6:
+    while not done and steps < 5:
         obs_dict = observation.model_dump()
 
-        action = decide_action(obs_dict, fixed)
+        if "fixed" in obs_dict["issues_found"]:
+            action = "Verify fix"
+        else:
+            action = decide_action(obs_dict)
 
         observation, reward, done, _ = env.step(action)
-
-        if reward == 1.0:
-            parsed = action.lower()
-            if "s3" in parsed:
-                fixed.append("fix_s3")
-            elif "port" in parsed:
-                fixed.append("fix_ec2")
-            elif "iam" in parsed:
-                fixed.append("fix_iam")
 
         steps += 1
         total_reward += reward
@@ -69,7 +60,7 @@ async def main():
         total_steps += steps
         all_rewards.extend(rewards)
 
-    success = total_score >= 3.0
+    success = total_score >= 2.0   # ✅ adjusted for new reward system
     avg_score = total_score / 3
 
     print(f"[END] success={str(success).lower()} steps={total_steps} score={avg_score:.3f} rewards={','.join(all_rewards)}")
