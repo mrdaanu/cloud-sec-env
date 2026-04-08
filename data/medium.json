@@ -1,0 +1,12 @@
+{
+  "resources": [
+    {
+      "id": "ec2_1",
+      "type": "ec2",
+      "config": {
+        "port_22_open": true
+      }
+    }
+  ],
+  "expected_action": "fix_ec2"
+}

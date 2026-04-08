@@ -12,6 +12,7 @@ class CloudEnv:
     def reset(self, level="easy"):
         task = load_task(level)
 
+        # ✅ Create resources
         resources = [
             Resource(
                 id=r["id"],
@@ -21,11 +22,24 @@ class CloudEnv:
             for r in task["resources"]
         ]
 
+        # ✅ FIX: detect expected action OUTSIDE dict
+        resource_type = task["resources"][0]["type"]
+
+        if resource_type == "s3":
+            expected_action = "fix_s3"
+        elif resource_type == "ec2":
+            expected_action = "fix_ec2"
+        elif resource_type == "iam":
+            expected_action = "fix_iam"
+        else:
+            expected_action = "unknown"
+
+        # ✅ Proper state dictionary
         self.state = {
             "resources": resources,
             "issues_found": [],
             "step_count": 0,
-            "expected_action": task["expected_action"],
+            "expected_action": expected_action,
             "fixed": False,
             "verified": False
         }

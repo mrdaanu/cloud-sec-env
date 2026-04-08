@@ -1,0 +1,12 @@
+{
+  "resources": [
+    {
+      "id": "iam_1",
+      "type": "iam",
+      "config": {
+        "admin_access": true
+      }
+    }
+  ],
+  "expected_action": "fix_iam"
+}

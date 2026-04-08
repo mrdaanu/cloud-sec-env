@@ -3,8 +3,10 @@
     {
       "id": "s3_1",
       "type": "s3",
-      "config": {"public": true}
+      "config": {
+        "public": true
+      }
     }
   ],
-  "expected_action": "fix_s3_public"
+  "expected_action": "fix_s3"
 }
