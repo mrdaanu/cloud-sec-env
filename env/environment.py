@@ -40,13 +40,17 @@ class CloudEnv:
         action = parse_action(action_text)
         expected = self.state["expected_action"]
 
+    
         reward = grade_action(action, expected)
 
-        if reward == 1.0:
-            self.state["issues_found"].append("fixed")
+if reward == 1.0:
+    self.state["issues_found"].append("fixed")
 
-        done = reward == 1.0 or self.state["step_count"] > 5
 
+if reward == 0.0:
+    reward = -0.1
+
+done = reward == 1.0 or self.state["step_count"] > 5
         observation = Observation(
             resources=self.state["resources"],
             issues_found=self.state["issues_found"],

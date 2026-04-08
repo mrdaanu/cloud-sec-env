@@ -1,5 +1,5 @@
-def parse_action(text: str):
-    text = text.lower()
+def parse_action(action_text):
+    return action_text.lower().strip()
 
     # S3 detection
     if "s3" in text or "bucket" in text or "public" in text:

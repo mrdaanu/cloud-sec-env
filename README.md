@@ -1,37 +1,42 @@
 ---
 title: Cloud Security Fixer
-emoji: 🛡️
+emoji: 🌍
 colorFrom: blue
 colorTo: green
 sdk: docker
-app_file: server.py
-pinned: false
 ---
 
-# Cloud Security Misconfiguration Fixer
+# ☁️ Cloud Security Misconfiguration Environment (OpenEnv)
 
-This project simulates a real-world cloud security environment where an AI agent detects and fixes misconfigurations.
+## 🚀 Overview
 
-## Features
+This environment simulates real-world cloud security misconfigurations that DevOps and security engineers handle daily.
 
-- Detects public S3 buckets
-- Identifies open ports in EC2
-- Fixes insecure IAM policies
-- Deterministic reward system
-- Multi-level tasks (easy, medium, hard)
+It enables AI agents to:
+- Detect vulnerabilities
+- Take corrective actions
+- Receive graded feedback
 
-## Tasks
+---
 
-- Easy: Fix public S3 bucket
-- Medium: Close open port
-- Hard: Restrict IAM policy
+## 🧠 Why this matters
 
-## Usage
+Cloud misconfigurations cause:
+- Data leaks (public S3)
+- Unauthorized access (open ports)
+- Privilege escalation (IAM policies)
 
-API endpoints:
-- `/reset`
-- `/step`
+This environment provides a **realistic evaluation benchmark** for AI agents.
 
-## Why it matters
+---
 
-Cloud misconfigurations are a major security risk. This environment helps evaluate AI agents in real DevSecOps workflows.
+## ⚙️ Environment Design
+
+### Observation Space
+
+```json
+{
+  "resources": [...],
+  "issues_found": [...],
+  "step_count": int
+}

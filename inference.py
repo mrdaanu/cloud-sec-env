@@ -25,20 +25,20 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]):
     print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
 
 
-def build_smart_action(observation):
-    resources = observation.get("resources", [])
+def decide_action(obs):
+    resources = obs["resources"]
 
     for r in resources:
-        if r["type"] == "s3" and r["config"].get("public"):
-            return "Fix public S3 bucket by making it private"
+        if r["type"] == "s3":
+            return "Make S3 bucket private"
 
-        if r["type"] == "ec2" and r["config"].get("open_port") == 22:
-            return "Close port 22 to secure the instance"
+        if r["type"] == "ec2":
+            return "Close port 22"
 
-        if r["type"] == "iam" and r["config"].get("policy") == "admin_access":
-            return "Restrict IAM policy to least privilege"
+        if r["type"] == "iam":
+            return "Apply least privilege policy"
 
-    return "No issue detected"
+    return "No action"
 
 
 async def main():
