@@ -1,0 +1,16 @@
+[project]
+name = "cloud-sec-env"
+version = "0.1.0"
+description = "Cloud security OpenEnv environment"
+authors = [
+    {name = "Danish Syed"}
+]
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
