@@ -1,12 +1,12 @@
 {
+  "task_id": "medium",
   "resources": [
     {
       "id": "ec2_1",
       "type": "ec2",
-      "config": {
-        "port_22_open": true
-      }
+      "config": { "port_22_open": true }
     }
   ],
-  "expected_action": "fix_ec2"
+  "expected_action": "fix_ec2",
+  "grader": "cloud_security"
 }

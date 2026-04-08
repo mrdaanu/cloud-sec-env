@@ -1,12 +1,12 @@
 {
+  "task_id": "hard",
   "resources": [
     {
       "id": "iam_1",
       "type": "iam",
-      "config": {
-        "admin_access": true
-      }
+      "config": { "admin_access": true }
     }
   ],
-  "expected_action": "fix_iam"
+  "expected_action": "fix_iam",
+  "grader": "cloud_security"
 }

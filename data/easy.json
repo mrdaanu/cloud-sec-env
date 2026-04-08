@@ -1,12 +1,12 @@
 {
+  "task_id": "easy",
   "resources": [
     {
       "id": "s3_1",
       "type": "s3",
-      "config": {
-        "public": true
-      }
+      "config": { "public": true }
     }
   ],
-  "expected_action": "fix_s3"
+  "expected_action": "fix_s3",
+  "grader": "cloud_security"
 }
