@@ -48,7 +48,6 @@ class CloudEnv:
 
     def step(self, action_text):
 
-        # ✅ FIXED INDENTATION (THIS WAS YOUR MAIN ERROR)
         if self.state is None:
             raise Exception("Call /reset before /step")
 
@@ -57,7 +56,7 @@ class CloudEnv:
         action_text = action_text.lower()
         expected = self.state["expected_action"]
 
-        reward = 0.0
+        reward = 0.05  # default small reward (never 0)
 
         # 🔧 FIX PHASE
         if not self.state["fixed"]:
@@ -65,31 +64,33 @@ class CloudEnv:
             if expected == "fix_s3" and "s3" in action_text:
                 self.state["fixed"] = True
                 self.state["issues_found"].append("fixed")
-                reward = 0.7
+                reward = 0.6
 
             elif expected == "fix_ec2" and ("port" in action_text or "ssh" in action_text):
                 self.state["fixed"] = True
                 self.state["issues_found"].append("fixed")
-                reward = 0.7
+                reward = 0.6
 
             elif expected == "fix_iam" and "iam" in action_text:
                 self.state["fixed"] = True
                 self.state["issues_found"].append("fixed")
-                reward = 0.7
+                reward = 0.6
 
             elif any(word in action_text for word in ["s3", "port", "iam"]):
-                reward = 0.3
+                reward = 0.3  # partial progress
 
             else:
-                reward = -0.1
+                reward = 0.05  # wrong but not zero/negative
 
         # 🔍 VERIFY PHASE
         elif self.state["fixed"] and not self.state["verified"]:
+
             if "verify" in action_text:
                 self.state["verified"] = True
-                reward = 1.0
+                reward = 0.95  # final success but < 1
+
             else:
-                reward = -0.1
+                reward = 0.05
 
         done = self.state["verified"] or self.state["step_count"] >= 5
 
