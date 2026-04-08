@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from env.environment import CloudEnv
 from env.models import Action
-import uvicorn
 
 app = FastAPI()
 env = CloudEnv()
@@ -34,5 +33,3 @@ def step(action: Action):
         return {
             "error": str(e)
         }
-if __name__ == "__main__":
-    uvicorn.run("server:app", host="0.0.0.0", port=7860)

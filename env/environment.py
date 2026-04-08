@@ -34,34 +34,33 @@ class CloudEnv:
             step_count=0
         )
 
-   def step(self, action_text):
+    def step(self, action_text):
 
-    # 🛡️ safety check
-    if self.state is None:
-        raise Exception("Environment not initialized. Call /reset first.")
+        if self.state is None:
+            raise Exception("Call /reset before /step")
 
-    self.state["step_count"] += 1
+        self.state["step_count"] += 1
 
-    action = parse_action(action_text)
-    expected = self.state["expected_action"]
+        action = parse_action(action_text)
+        expected = self.state["expected_action"]
 
-    reward = grade_action(action, expected)
+        reward = grade_action(action, expected)
 
-    if reward == 1.0:
-        self.state["issues_found"].append("fixed")
+        if reward == 1.0:
+            self.state["issues_found"].append("fixed")
 
-    if reward == 0.0:
-        reward = -0.1
+        if reward == 0.0:
+            reward = -0.1
 
-    done = reward == 1.0 or self.state["step_count"] > 5
+        done = reward == 1.0 or self.state["step_count"] >= 5
 
-    observation = Observation(
-        resources=self.state["resources"],
-        issues_found=self.state["issues_found"],
-        step_count=self.state["step_count"]
-    )
+        observation = Observation(
+            resources=self.state["resources"],
+            issues_found=self.state["issues_found"],
+            step_count=self.state["step_count"]
+        )
 
-    return observation, reward, done, {}
+        return observation, reward, done, {}
 
     def state(self):
         return self.state
