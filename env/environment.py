@@ -1,5 +1,4 @@
 from env.parser import parse_action
-from env.graders import grade_action
 from env.tasks import load_task
 from env.models import Observation, Resource
 
@@ -12,7 +11,7 @@ class CloudEnv:
     def reset(self, level="easy"):
         task = load_task(level)
 
-        # ✅ Create resources
+        # Create resources
         resources = [
             Resource(
                 id=r["id"],
@@ -22,7 +21,7 @@ class CloudEnv:
             for r in task["resources"]
         ]
 
-        # ✅ FIX: detect expected action OUTSIDE dict
+        # Detect expected action
         resource_type = task["resources"][0]["type"]
 
         if resource_type == "s3":
@@ -34,7 +33,7 @@ class CloudEnv:
         else:
             expected_action = "unknown"
 
-        # ✅ Proper state dictionary
+        # State
         self.state = {
             "resources": resources,
             "issues_found": [],
@@ -52,6 +51,7 @@ class CloudEnv:
 
     def step(self, action_text):
 
+        # ✅ IMPORTANT: indentation fixed here
         if self.state is None:
             raise Exception("Call /reset before /step")
 
@@ -62,7 +62,7 @@ class CloudEnv:
 
         reward = 0.0
 
-        # 🔧 FIX PHASE
+        # FIX PHASE
         if not self.state["fixed"]:
             if action == expected:
                 self.state["fixed"] = True
@@ -73,9 +73,9 @@ class CloudEnv:
             else:
                 reward = -0.1
 
-        # 🔍 VERIFY PHASE
+        # VERIFY PHASE
         elif self.state["fixed"] and not self.state["verified"]:
-            if "verify" in action_text.lower():
+            if action == "verify":
                 self.state["verified"] = True
                 reward = 1.0
             else:
