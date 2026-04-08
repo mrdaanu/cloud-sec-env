@@ -1,88 +1,77 @@
 import os
 import asyncio
-from typing import List, Optional
 from openai import OpenAI
-
-API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
-
-MAX_STEPS = 5
+from env.environment import CloudEnv
 
 
-def log_start(task: str, env: str, model: str):
-    print(f"[START] task={task} env={env} model={model}", flush=True)
+client = OpenAI(
+    base_url=os.getenv("API_BASE_URL"),
+    api_key=os.getenv("OPENAI_API_KEY")
+)
+
+MODEL = os.getenv("MODEL_NAME")
 
 
-def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]):
-    error_val = error if error else "null"
-    done_val = str(done).lower()
-    print(f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}", flush=True)
-
-
-def log_end(success: bool, steps: int, score: float, rewards: List[float]):
-    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
-
-
-def decide_action(obs):
-    resources = obs["resources"]
+def decide_action(observation):
+    resources = observation["resources"]
 
     for r in resources:
         if r["type"] == "s3":
             return "Make S3 bucket private"
 
-        if r["type"] == "ec2":
+        elif r["type"] == "ec2":
             return "Close port 22"
 
-        if r["type"] == "iam":
+        elif r["type"] == "iam":
             return "Apply least privilege policy"
 
     return "No action"
 
 
-async def main():
-    from env.environment import CloudEnv
-
+async def run_task(level):
     env = CloudEnv()
+    observation = env.reset(level)
 
+    total_reward = 0
+    steps = 0
     rewards = []
-    steps_taken = 0
 
-    log_start(task="cloud_security", env="cloud_env", model=MODEL_NAME)
+    done = False
 
-    try:
-        for level in ["easy", "medium", "hard"]:
+    while not done and steps < 5:
+        obs_dict = observation.model_dump()
 
-            observation = env.reset(level)
+        action = decide_action(obs_dict)
 
-            for step in range(1, MAX_STEPS + 1):
+        observation, reward, done, _ = env.step(action)
 
-                obs_dict = observation.model_dump()
+        steps += 1
+        total_reward += reward
+        rewards.append(f"{reward:.2f}")
 
-                action = build_smart_action(obs_dict)
+        print(f"[STEP] step={steps} action={action} reward={reward:.2f} done={str(done).lower()} error=null")
 
-                observation, reward, done, _ = env.step(action)
+    return total_reward, steps, rewards
 
-                rewards.append(reward)
-                steps_taken += 1
 
-                log_step(step, action, reward, done, None)
+async def main():
+    print(f"[START] task=cloud_security env=cloud_env model={MODEL}")
 
-                if done:
-                    break
+    total_score = 0
+    total_steps = 0
+    all_rewards = []
 
-        score = sum(rewards) / len(rewards) if rewards else 0.0
-        score = min(max(score, 0.0), 1.0)
+    for level in ["easy", "medium", "hard"]:
+        score, steps, rewards = await run_task(level)
 
-        success = score > 0.5
+        total_score += score
+        total_steps += steps
+        all_rewards.extend(rewards)
 
-    except Exception as e:
-        log_step(steps_taken, "error", 0.0, True, str(e))
-        success = False
-        score = 0.0
+    success = total_score >= 2.0
+    avg_score = total_score / 3
 
-    log_end(success, steps_taken, score, rewards)
+    print(f"[END] success={str(success).lower()} steps={total_steps} score={avg_score:.3f} rewards={','.join(all_rewards)}")
 
 
 if __name__ == "__main__":
