@@ -21,9 +21,8 @@ def decide_action(observation):
 
         elif r["type"] == "ec2":
             return "Close port 22"
-
         elif r["type"] == "iam":
-            return "Apply least privilege policy"
+            return "Apply least privilege IAM policy"
 
     return "No action"
 
