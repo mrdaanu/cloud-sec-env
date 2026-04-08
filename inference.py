@@ -1,14 +1,9 @@
 import os
 import asyncio
-from openai import OpenAI
 from env.environment import CloudEnv
 
 
-client = OpenAI(
-    base_url=os.getenv("API_BASE_URL"),
-    api_key=os.getenv("OPENAI_API_KEY")
-)
-
+# OpenAI client not required for this baseline agent
 MODEL = os.getenv("MODEL_NAME")
 
 
