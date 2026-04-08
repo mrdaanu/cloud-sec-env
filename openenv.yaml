@@ -1,0 +1,16 @@
+name: cloud-security-fixer
+description: AI agent environment for detecting and fixing cloud misconfigurations
+
+entrypoint:
+  docker_image: cloud-sec-env
+
+observation_space:
+  type: Observation
+
+action_space:
+  type: Action
+
+tasks:
+  - easy
+  - medium
+  - hard
