@@ -1,16 +1,17 @@
 import json
 import os
+from env.graders import grade_easy, grade_medium, grade_hard
+
+
+# 🔥 REGISTER GRADERS (THIS IS THE KEY FIX)
+GRADER_MAP = {
+    "easy": grade_easy,
+    "medium": grade_medium,
+    "hard": grade_hard
+}
 
 
 def load_task(level: str):
-    """
-    Loads a task based on difficulty level (easy, medium, hard)
-
-    Ensures:
-    - task structure is valid
-    - required fields exist (expected_action, grader)
-    """
-
     file_path = os.path.join("data", f"{level}.json")
 
     if not os.path.exists(file_path):
@@ -19,19 +20,16 @@ def load_task(level: str):
     with open(file_path, "r") as f:
         task = json.load(f)
 
-    # ✅ REQUIRED FIELDS (validator expects this)
+    # REQUIRED FIELDS
     required_fields = ["resources", "expected_action", "grader"]
-
     for field in required_fields:
         if field not in task:
             raise Exception(f"Task missing required field: {field}")
 
-    # ✅ Ensure at least 1 resource exists
-    if not isinstance(task["resources"], list) or len(task["resources"]) == 0:
-        raise Exception("Task must contain at least one resource")
+    # 🔥 ATTACH ACTUAL GRADER FUNCTION
+    task["grader_fn"] = GRADER_MAP.get(level)
 
-    # ✅ Normalize structure (safe for validator)
-    task["task_id"] = task.get("task_id", level)
-    task["difficulty"] = level
+    if task["grader_fn"] is None:
+        raise Exception(f"No grader found for level: {level}")
 
     return task
