@@ -1,11 +1,19 @@
-name: cloud_security
-version: 1.0
-description: Cloud security misconfiguration environment
+name: cloud_env
+description: Cloud Security Misconfiguration Environment
+
+tasks:
+  - id: easy
+    description: Fix public S3 bucket
+    grader: grade_easy
+
+  - id: medium
+    description: Close open SSH port
+    grader: grade_medium
+
+  - id: hard
+    description: Fix IAM privilege escalation
+    grader: grade_hard
 
 entrypoint:
   module: server
-  app: app
-
-endpoints:
-  reset: /reset
-  step: /step
+  object: app
