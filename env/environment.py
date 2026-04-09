@@ -1,6 +1,5 @@
 from env.tasks import load_task
 from env.models import Observation, Resource
-from env.graders import grade_easy, grade_medium, grade_hard
 
 
 class CloudEnv:
@@ -26,7 +25,10 @@ class CloudEnv:
             "step_count": 0,
             "level": level,
             "fixed": False,
-            "verified": False
+            "verified": False,
+
+            # 🔥 CRITICAL: grader attached from tasks.py
+            "grader": task["grader"]
         }
 
         return Observation(
@@ -43,20 +45,10 @@ class CloudEnv:
         self.state["step_count"] += 1
 
         action = action_text.lower()
-        level = self.state["level"]
 
-        # 🔥 EXPLICIT GRADER CALLS (CRITICAL)
-        if level == "easy":
-            reward = grade_easy(action)
-
-        elif level == "medium":
-            reward = grade_medium(action)
-
-        elif level == "hard":
-            reward = grade_hard(action)
-
-        else:
-            reward = 0.05
+        # 🔥 USE TASK-LEVEL GRADER
+        grader_fn = self.state["grader"]
+        reward = grader_fn(action)
 
         # 🔧 FIX PHASE
         if not self.state["fixed"]:
