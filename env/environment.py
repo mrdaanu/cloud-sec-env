@@ -1,6 +1,6 @@
 from env.tasks import load_task
 from env.models import Observation, Resource
-from env.graders import grade_action
+from env.graders import grade_easy, grade_medium, grade_hard
 
 
 class CloudEnv:
@@ -20,14 +20,11 @@ class CloudEnv:
             for r in task["resources"]
         ]
 
-        # ✅ expected action from task (important for validator)
-        expected_action = task.get("expected_action", "unknown")
-
         self.state = {
             "resources": resources,
             "issues_found": [],
             "step_count": 0,
-            "expected_action": expected_action,
+            "level": level,          # ✅ important for grader mapping
             "fixed": False,
             "verified": False
         }
@@ -46,10 +43,17 @@ class CloudEnv:
         self.state["step_count"] += 1
 
         action = action_text.lower()
-        expected = self.state["expected_action"]
+        level = self.state["level"]
 
-        # ✅ use grader (MANDATORY for validation)
-        reward = grade_action(action, expected)
+        # ✅ EXPLICIT GRADER MAPPING (CRITICAL FIX)
+        if level == "easy":
+            reward = grade_easy(action)
+        elif level == "medium":
+            reward = grade_medium(action)
+        elif level == "hard":
+            reward = grade_hard(action)
+        else:
+            reward = 0.05  # fallback safe reward
 
         # 🔧 FIX PHASE tracking
         if not self.state["fixed"]:

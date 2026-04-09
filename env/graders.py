@@ -1,19 +1,31 @@
-def grade_action(action, expected):
+def grade_easy(action):
     action = action.lower()
-
-    if expected == "fix_s3" and "s3" in action:
+    if "s3" in action:
         return 0.6
-
-    elif expected == "fix_ec2" and ("port" in action or "ssh" in action):
-        return 0.6
-
-    elif expected == "fix_iam" and "iam" in action:
-        return 0.6
-
     elif "verify" in action:
         return 0.95
-
-    elif any(word in action for word in ["s3", "port", "iam"]):
+    elif "s3" in action:
         return 0.3
+    return 0.05
 
+
+def grade_medium(action):
+    action = action.lower()
+    if "port" in action or "ssh" in action:
+        return 0.6
+    elif "verify" in action:
+        return 0.95
+    elif "port" in action:
+        return 0.3
+    return 0.05
+
+
+def grade_hard(action):
+    action = action.lower()
+    if "iam" in action:
+        return 0.6
+    elif "verify" in action:
+        return 0.95
+    elif "iam" in action:
+        return 0.3
     return 0.05
