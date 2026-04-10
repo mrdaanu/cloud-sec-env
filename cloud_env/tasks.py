@@ -13,7 +13,7 @@ def load_task(level: str):
     with open(file_path, "r") as f:
         task = json.load(f)
 
-    # 🔥 ATTACH GRADER DIRECTLY TO TASK
+    
     if level == "easy":
         task["grader"] = grade_easy
 

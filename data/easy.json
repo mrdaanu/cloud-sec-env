@@ -7,6 +7,5 @@
       "config": { "public": true }
     }
   ],
-  "expected_action": "fix_s3",
   "grader": "cloud_security"
 }

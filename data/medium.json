@@ -2,11 +2,15 @@
   "task_id": "medium",
   "resources": [
     {
+      "id": "s3_1",
+      "type": "s3",
+      "config": { "public": true }
+    },
+    {
       "id": "ec2_1",
       "type": "ec2",
       "config": { "port_22_open": true }
     }
   ],
-  "expected_action": "fix_ec2",
   "grader": "cloud_security"
 }

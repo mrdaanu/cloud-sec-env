@@ -16,7 +16,7 @@ def reset():
     obs = env.reset()
 
     return {
-        "observation": obs.model_dump(),   # ✅ FIXED
+        "observation": obs.model_dump(),   
         "reward": 0.0,
         "done": False,
         "info": {}
@@ -29,14 +29,14 @@ def step(action: Action):
         obs, reward, done, info = env.step(action.action)
 
         return {
-            "observation": obs.model_dump(),   # ✅ FIXED
-            "reward": float(reward),           # ✅ ensure float
-            "done": bool(done),                # ✅ ensure bool
+            "observation": obs.model_dump(),   
+            "reward": float(reward),           
+            "done": bool(done),               
             "info": info if isinstance(info, dict) else {}
         }
 
     except Exception as e:
-        # ✅ IMPORTANT: STILL RETURN VALID FORMAT
+        
         return {
             "observation": {
                 "resources": [],

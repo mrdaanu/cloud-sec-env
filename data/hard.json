@@ -2,11 +2,20 @@
   "task_id": "hard",
   "resources": [
     {
+      "id": "s3_1",
+      "type": "s3",
+      "config": { "public": true }
+    },
+    {
+      "id": "ec2_1",
+      "type": "ec2",
+      "config": { "port_22_open": true }
+    },
+    {
       "id": "iam_1",
       "type": "iam",
       "config": { "admin_access": true }
     }
   ],
-  "expected_action": "fix_iam",
   "grader": "cloud_security"
 }
