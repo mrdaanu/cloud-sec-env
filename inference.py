@@ -1,7 +1,7 @@
 import asyncio
 import os
 from openai import OpenAI
-from env.environment import CloudEnv
+from cloud_env.environment import CloudEnv
 
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")

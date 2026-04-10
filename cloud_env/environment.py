@@ -1,6 +1,6 @@
-from env.tasks import load_task
-from env.models import Observation, Resource
-
+from cloud_env.parser import parse_action
+from cloud_env.tasks import load_task
+from cloud_env.models import Observation, Resource
 
 class CloudEnv:
 

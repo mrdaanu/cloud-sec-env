@@ -1,6 +1,6 @@
 import json
 import os
-from env.graders import grade_easy, grade_medium, grade_hard
+from cloud_env.graders import grade_easy, grade_medium, grade_hard
 
 
 def load_task(level: str):
