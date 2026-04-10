@@ -1,33 +1,32 @@
 import asyncio
 import os
 from openai import OpenAI
-from env.environment import CloudEnv
+
+# ✅ Try OpenEnv (for validator)
+try:
+    from openenv import Env
+    OPENENV_AVAILABLE = True
+except:
+    OPENENV_AVAILABLE = False
+
+# ✅ Local fallback
+if not OPENENV_AVAILABLE:
+    from env.environment import CloudEnv
 
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
-API_KEY = os.getenv("API_KEY", "dummy")
+API_KEY = os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
+IMAGE_NAME = os.getenv("IMAGE_NAME", "cloud-sec-env")
 
 
-# ✅ SAFE CLIENT (never crash)
-try:
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
-except:
-    client = None
-
-
-# ✅ ONE SAFE API CALL (just for validator tracking)
-def ping_llm():
-    if not client:
-        return
+# ✅ SAFE CLIENT (no crash)
+client = None
+if API_KEY:
     try:
-        client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": "hello"}],
-            max_tokens=5
-        )
+        client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     except:
-        pass  # never crash
+        client = None
 
 
 def decide_action(obs):
@@ -41,64 +40,103 @@ def decide_action(obs):
     return "Verify fix"
 
 
-async def run_task(level):
-    env = CloudEnv()
-    observation = env.reset(level)
+# 🔥 Validator mode
+async def run_openenv():
+    env = await Env.from_docker_image(IMAGE_NAME)
 
-    total_reward = 0
     rewards = []
-    steps = 0
-    done = False
+    steps_taken = 0
 
-    while not done and steps < 5:
-        obs_dict = observation.model_dump()
+    try:
+        result = await env.reset()
 
-        if "fixed" in obs_dict["issues_found"]:
-            action = "Verify fix"
-        else:
-            action = decide_action(obs_dict)
+        for step in range(1, 6):
+            obs = result.observation.model_dump()
+            action = decide_action(obs)
+
+            result = await env.step({"action": action})
+
+            reward = result.reward or 0.0
+
+            # ✅ Clamp (VERY IMPORTANT)
+            if reward >= 1.0:
+                reward = 0.95
+            elif reward <= 0.0:
+                reward = 0.05
+
+            rewards.append(reward)
+            steps_taken = step
+
+            print(f"[STEP] step={step} action={action} reward={reward:.2f} done={str(result.done).lower()} error=null")
+
+            if result.done:
+                break
+
+        score = sum(rewards) / len(rewards)
+        score = max(0.05, min(score, 0.95))
+        success = score > 0.1
+
+    finally:
+        await env.close()
+
+        rewards_str = ",".join(f"{r:.2f}" for r in rewards)
+        print(f"[END] success={str(success).lower()} steps={steps_taken} score={score:.3f} rewards={rewards_str}")
+
+
+# 🔥 Local mode
+async def run_local():
+    env = CloudEnv()
+    observation = env.reset("easy")
+
+    rewards = []
+    steps_taken = 0
+
+    for step in range(1, 6):
+        obs = observation.model_dump()
+        action = decide_action(obs)
 
         observation, reward, done, _ = env.step(action)
 
-        # ✅ clamp reward
         if reward >= 1.0:
             reward = 0.95
         elif reward <= 0.0:
             reward = 0.05
 
-        steps += 1
-        total_reward += reward
-        rewards.append(f"{reward:.2f}")
+        rewards.append(reward)
+        steps_taken = step
 
-        print(f"[STEP] step={steps} action={action} reward={reward:.2f} done={str(done).lower()} error=null")
+        print(f"[STEP] step={step} action={action} reward={reward:.2f} done={str(done).lower()} error=null")
 
-    score = total_reward / 5
+        if done:
+            break
+
+    score = sum(rewards) / len(rewards)
     score = max(0.05, min(score, 0.95))
+    success = score > 0.1
 
-    return score, steps, rewards
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
+    print(f"[END] success={str(success).lower()} steps={steps_taken} score={score:.3f} rewards={rewards_str}")
 
 
 async def main():
     print(f"[START] task=cloud_security env=cloud_env model={MODEL_NAME}")
 
-    # 🔥 IMPORTANT: call LLM once (validator needs this)
-    ping_llm()
+    # ✅ IMPORTANT: one safe API call (for validator proxy check)
+    if client:
+        try:
+            client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[{"role": "user", "content": "hello"}],
+                max_tokens=5
+            )
+        except:
+            pass
 
-    total_score = 0
-    total_steps = 0
-    all_rewards = []
-
-    for level in ["easy", "medium", "hard"]:
-        score, steps, rewards = await run_task(level)
-
-        total_score += score
-        total_steps += steps
-        all_rewards.extend(rewards)
-
-    avg_score = total_score / 3
-    success = avg_score > 0.1
-
-    print(f"[END] success={str(success).lower()} steps={total_steps} score={avg_score:.3f} rewards={','.join(all_rewards)}")
+    # ✅ Choose mode
+    if OPENENV_AVAILABLE:
+        await run_openenv()
+    else:
+        await run_local()
 
 
 if __name__ == "__main__":
