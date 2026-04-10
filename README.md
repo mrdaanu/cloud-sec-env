@@ -96,6 +96,7 @@ Instead of a simple one-step reward system, this environment introduces:
 - Verification only after all issues are solved  
 - Partial rewards for progress  
 
+In some scenarios, not all issues are visible initially. New vulnerabilities may appear after partial fixes, requiring the agent to adapt dynamically.
 This makes it closer to real-world workflows rather than just pattern matching.
 
 ---
