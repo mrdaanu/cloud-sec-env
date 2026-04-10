@@ -6,14 +6,14 @@ entrypoint:
   object: app
 
 tasks:
-  easy:
+  - id: easy
     description: Fix public S3 bucket
-    grader: env.graders.grade_easy
+    grader: env.graders:grade_easy
 
-  medium:
+  - id: medium
     description: Close open SSH port
-    grader: env.graders.grade_medium
+    grader: env.graders:grade_medium
 
-  hard:
-    description: Fix IAM policy privilege escalation
-    grader: env.graders.grade_hard
+  - id: hard
+    description: Fix IAM privilege escalation
+    grader: env.graders:grade_hard
