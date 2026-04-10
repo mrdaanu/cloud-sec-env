@@ -21,27 +21,19 @@ class CloudEnv:
             for r in task["resources"]
         ]
 
-        # 🔥 Hidden issue logic (only for medium & hard)
-        hidden_issue = None
-        if level in ["medium", "hard"] and len(resources) > 1:
-            hidden_issue = random.choice(resources).id
-
         self.state = {
             "resources": resources,
             "issues_found": [],
             "step_count": 0,
+            "fixed": False,
             "verified": False,
-            "hidden_issue": hidden_issue,
-            "revealed": False
+            "history": [],
+            "level": level,
+            "hidden_issue": False
         }
 
-        # 🔍 Only show visible resources initially
-        visible_resources = [
-            r for r in resources if r.id != hidden_issue
-        ]
-
         return Observation(
-            resources=visible_resources,
+            resources=resources,
             issues_found=[],
             step_count=0
         )
@@ -55,60 +47,60 @@ class CloudEnv:
         action_text = action_text.lower()
 
         reward = 0.0
-        fixed_now = False
 
-        # 🔧 FIX LOGIC (MULTI-RESOURCE)
-        for r in self.state["resources"]:
+        
+        if action_text in self.state["history"]:
+            reward = -0.2
+        else:
+            self.state["history"].append(action_text)
 
-            if r.id in self.state["issues_found"]:
-                continue
+        if not self.state["fixed"]:
 
-            if r.type == "s3" and "s3" in action_text:
-                self.state["issues_found"].append(r.id)
-                reward += 0.3
-                fixed_now = True
+            if "s3" in action_text:
+                self.state["fixed"] = True
+                self.state["issues_found"].append("s3_fixed")
+                reward = 0.8
 
-            elif r.type == "ec2" and ("port" in action_text or "ssh" in action_text):
-                self.state["issues_found"].append(r.id)
-                reward += 0.3
-                fixed_now = True
+                
+                if self.state["level"] != "easy":
+                    self.state["hidden_issue"] = True
 
-            elif r.type == "iam" and "iam" in action_text:
-                self.state["issues_found"].append(r.id)
-                reward += 0.3
-                fixed_now = True
+            elif "port" in action_text or "ssh" in action_text:
+                self.state["fixed"] = True
+                self.state["issues_found"].append("ec2_fixed")
+                reward = 0.7
 
-        # ❌ WRONG ACTION
-        if not fixed_now and "verify" not in action_text:
-            reward = -0.1
+            elif "iam" in action_text:
+                self.state["fixed"] = True
+                self.state["issues_found"].append("iam_fixed")
+                reward = 0.7
 
-        # 🔥 REVEAL HIDDEN ISSUE AFTER FIRST FIX
-        if (
-            self.state["hidden_issue"]
-            and not self.state["revealed"]
-            and len(self.state["issues_found"]) >= 1
-        ):
-            self.state["revealed"] = True
+            elif any(word in action_text for word in ["s3", "port", "iam"]):
+                reward = 0.3
+            else:
+                reward = -0.1
 
-        # 🔍 BUILD VISIBLE RESOURCES
-        visible_resources = []
+        elif self.state["hidden_issue"] and not self.state["verified"]:
 
-        for r in self.state["resources"]:
-            if r.id == self.state["hidden_issue"] and not self.state["revealed"]:
-                continue
-            visible_resources.append(r)
+            if "iam" in action_text:
+                self.state["issues_found"].append("hidden_fixed")
+                self.state["hidden_issue"] = False
+                reward = 0.6
+            else:
+                reward = -0.1
 
-        # 🔍 VERIFY ONLY AFTER ALL FIXED
-        all_fixed = len(self.state["issues_found"]) == len(self.state["resources"])
+        elif self.state["fixed"] and not self.state["verified"]:
 
-        if all_fixed and "verify" in action_text:
-            reward = 0.9
-            self.state["verified"] = True
+            if "verify" in action_text:
+                self.state["verified"] = True
+                reward = 0.9
+            else:
+                reward = -0.1
 
         done = self.state["verified"] or self.state["step_count"] >= 6
 
         observation = Observation(
-            resources=visible_resources,
+            resources=self.state["resources"],
             issues_found=self.state["issues_found"],
             step_count=self.state["step_count"]
         )

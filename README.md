@@ -8,6 +8,16 @@ sdk: docker
 
 # ☁️ Cloud Security Misconfiguration Environment (OpenEnv)
 
+## ⚡ What this environment tests
+
+This environment evaluates how well an AI agent can handle real-world cloud security incidents involving multiple misconfigurations, hidden vulnerabilities, and sequential decision-making.
+
+Unlike simple benchmarks, agents must not only fix issues but also adapt when new risks emerge after partial fixes.
+
+  This environment is designed as a lightweight benchmark for evaluating real-world decision-making in cloud security systems.
+
+---
+
 ## 🚀 Overview
 
 This project is my attempt to build something practical instead of a typical toy environment.
@@ -75,17 +85,17 @@ This requires **multi-step reasoning and correct sequencing**.
 ---
 
 ## 🔄 Example Scenario (Hard)
-Resources:
-S3 bucket is public
-EC2 port 22 is open
-IAM policy allows admin access
 
-Expected behavior:
-Fix S3 bucket
-Close port 22
-Restrict IAM policy
-Verify fix
----
+**Resources:**
+- S3 bucket is public  
+- EC2 port 22 is open  
+- IAM policy allows admin access  
+
+**Expected behavior:**
+1. Fix S3 bucket  
+2. Close port 22  
+3. Restrict IAM policy  
+4. Verify fix
 
 ## 🔥 What makes this different
 
@@ -101,19 +111,51 @@ This makes it closer to real-world workflows rather than just pattern matching.
 
 ---
 
+## 🧩 Hidden System Behavior (Advanced Design)
+
+To simulate real-world cloud complexity, the environment includes **hidden cascading issues**.
+
+For example:
+- Fixing a public S3 bucket may expose an IAM misconfiguration
+- Some vulnerabilities only appear after initial fixes
+
+This forces the agent to:
+- Adapt dynamically
+- Perform multi-step reasoning
+- Handle non-obvious dependencies
+
+This mirrors how real cloud systems behave under security changes.
+
+
+---
+
 ## 🧠 Reward System
 
-| Action Type        | Reward |
-|------------------|--------|
-| Correct fix       | +0.3   |
-| Final verification| +0.9   |
-| Partial relevance | +0.3   |
-| Wrong action      | -0.1   |
+| Action Type       | Reward |
+|-------------------|--------|
+| Correct fix       | +0.6 to +0.8 |
+| Hidden issue fix  | +0.6 |
+| Final verification| +0.9 |
+| Wrong action      | -0.1 |
 
 This gives continuous feedback across the full episode instead of only success/failure.
 
 ---
 
+## 🎯 Reward Design Philosophy
+
+Instead of binary rewards, this environment uses **progressive reward shaping**:
+
+- Encourages correct fixes
+- Penalizes repeated or irrelevant actions
+- Rewards verification separately
+
+This ensures:
+- Better learning signal across steps
+- Reduced exploitation of simple strategies
+- More realistic agent evaluation
+
+---
 ## 🤖 Baseline Agent
 
 The `inference.py` script runs a simple agent that:
@@ -125,18 +167,16 @@ The `inference.py` script runs a simple agent that:
 
 ---
 
-## 🧠 Why this environment matters
+## 🧠 Design Thinking
 
-Most environments test one action at a time.
+This environment was designed with a focus on:
 
-This one tests:
+- Real-world cloud security workflows
+- Sequential problem solving
+- Hidden dependencies between resources
+- Deterministic and reproducible evaluation
 
-- Multi-step reasoning  
-- Decision sequencing  
-- Partial reward optimization  
-- Real cloud remediation workflow  
-
-It can be used as a simple benchmark for evaluating **autonomous security or DevOps agents**.
+Rather than building a complex system, the goal was to create a **clean, reliable benchmark** that still captures real-world behavior.
 
 ---
 
@@ -153,14 +193,7 @@ Swagger UI:/docs
 ---
 
 ## 📁 Project Structure
-cloud_env/ 
-data/
- server.py
-  inference.py
-   Dockerfile
-    openenv.yaml
-     requirements.txt
-      README.md
+  cloud_env/ data/ server.py inference.py Dockerfile openenv.yaml requirements.txt README.md
 
 ---
 
