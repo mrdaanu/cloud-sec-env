@@ -3,6 +3,9 @@ import os
 from cloud_env.environment import CloudEnv
 from openai import OpenAI
 
+
+# ENV CONFIG
+
 API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
@@ -17,8 +20,7 @@ if API_BASE_URL and API_KEY:
 
 def call_llm():
     if client is None:
-        return  
-
+        return
     try:
         client.chat.completions.create(
             model=MODEL_NAME,
@@ -27,6 +29,7 @@ def call_llm():
         )
     except:
         pass
+
 
 def decide_action(obs, level):
     fixed = obs.get("issues_found", [])
@@ -74,7 +77,7 @@ async def run_task(level):
             f"reward={reward:.2f} done={str(done).lower()} error=null"
         )
 
-   
+    # normalize score
     score = total_reward / len(rewards)
     score = max(0.01, min(score, 0.99))
 
@@ -82,18 +85,15 @@ async def run_task(level):
 
     print(
         f"[END] success={str(success).lower()} "
-        f"steps={steps} "
-        f"score={score:.3f} "
+        f"steps={steps} score={score:.3f} "
         f"rewards={','.join([f'{r:.2f}' for r in rewards])}"
     )
 
 
 
 async def main():
-
-    level = os.getenv("TASK_LEVEL", "easy")
-
-    await run_task(level)
+    for level in ["easy", "medium", "hard"]:
+        await run_task(level)
 
 
 if __name__ == "__main__":

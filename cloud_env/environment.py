@@ -21,23 +21,23 @@ class CloudEnv:
             for r in task["resources"]
         ]
 
-        # expected issues list
-        expected_issues = []
+        expected = []
         for r in task["resources"]:
             if r["type"] == "s3":
-                expected_issues.append("s3")
+                expected.append("s3")
             elif r["type"] == "ec2":
-                expected_issues.append("ec2")
+                expected.append("ec2")
             elif r["type"] == "iam":
-                expected_issues.append("iam")
+                expected.append("iam")
 
         self.state = {
             "resources": resources,
             "issues_found": [],
-            "step_count": 0,
-            "expected_issues": expected_issues,
+            "expected": expected,
             "fixed": [],
-            "verified": False
+            "step_count": 0,
+            "verified": False,
+            "history": []
         }
 
         return Observation(
@@ -49,50 +49,65 @@ class CloudEnv:
     def step(self, action_text):
 
         if self.state is None:
-            raise Exception("Call reset first")
+            raise Exception("Call reset() first")
 
         self.state["step_count"] += 1
         action_text = action_text.lower()
 
-        reward = 0.05  # base small reward (SAFE > 0)
+        step = self.state["step_count"]
 
-        # ===== FIX PHASE =====
-        for issue in self.state["expected_issues"]:
+        
+        reward = max(0.05, 0.1 - (step * 0.005))
 
+        #  anti-loop
+        if action_text in self.state["history"]:
+            reward = 0.05
+
+        self.state["history"].append(action_text)
+
+        
+        for issue in self.state["expected"]:
             if issue not in self.state["fixed"]:
 
                 if issue == "s3" and "s3" in action_text:
                     self.state["fixed"].append("s3")
-                    reward = 0.4
+                    reward = 0.5 - (step * 0.01)
 
                 elif issue == "ec2" and ("port" in action_text or "ssh" in action_text):
                     self.state["fixed"].append("ec2")
-                    reward = 0.4
+                    reward = 0.5 - (step * 0.01)
 
                 elif issue == "iam" and "iam" in action_text:
                     self.state["fixed"].append("iam")
-                    reward = 0.4
+                    reward = 0.5 - (step * 0.01)
 
-                elif any(word in action_text for word in ["s3", "port", "iam"]):
-                    reward = 0.2  # partial relevance
+                elif any(k in action_text for k in ["s3", "port", "iam"]):
+                    reward = 0.2
 
                 else:
                     reward = 0.05
 
                 break
 
-        # ===== VERIFY PHASE =====
-        if len(self.state["fixed"]) == len(self.state["expected_issues"]):
-            if "verify" in action_text:
-                self.state["verified"] = True
-                reward = 0.9
+        #  HIDDEN  (ONLY HARD)
+        if len(self.state["expected"]) >= 3:
+            if "s3" in self.state["fixed"] and "iam" not in self.state["expected"]:
+                if "iam" not in self.state["fixed"] and step == 2:
+                    self.state["expected"].append("iam")
 
-        done = self.state["verified"] or self.state["step_count"] >= 6
+        #  VERIFY PHASE
+        if set(self.state["fixed"]) == set(self.state["expected"]):
+            if "verify" in action_text:
+                reward = 0.9 - (step * 0.01)
+                reward = max(0.6, reward)  # keep strong reward
+                self.state["verified"] = True
+
+        done = self.state["verified"] or step >= 6
 
         observation = Observation(
             resources=self.state["resources"],
             issues_found=self.state["fixed"],
-            step_count=self.state["step_count"]
+            step_count=step
         )
 
         return observation, reward, done, {}
