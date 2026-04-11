@@ -1,7 +1,7 @@
 from cloud_env.parser import parse_action
-import random
 from cloud_env.models import Observation, Resource
 from cloud_env.tasks import load_task
+import random
 
 
 class CloudEnv:
@@ -21,23 +21,20 @@ class CloudEnv:
             for r in task["resources"]
         ]
 
-        expected = []
-        for r in task["resources"]:
-            if r["type"] == "s3":
-                expected.append("s3")
-            elif r["type"] == "ec2":
-                expected.append("ec2")
-            elif r["type"] == "iam":
-                expected.append("iam")
+        # 🔥 Hidden IAM (safe randomness)
+        hidden_iam = False
+        if level in ["medium", "hard"]:
+            if random.random() < 0.4:
+                hidden_iam = True
 
         self.state = {
             "resources": resources,
             "issues_found": [],
-            "expected": expected,
-            "fixed": [],
             "step_count": 0,
             "verified": False,
-            "history": []
+            "level": level,
+            "hidden_iam": hidden_iam,
+            "verify_attempted": False
         }
 
         return Observation(
@@ -54,60 +51,62 @@ class CloudEnv:
         self.state["step_count"] += 1
         action_text = action_text.lower()
 
-        step = self.state["step_count"]
+        fixed = self.state["issues_found"]
+        level = self.state["level"]
 
-        
-        reward = max(0.05, 0.1 - (step * 0.005))
+        required = {
+            "easy": ["s3"],
+            "medium": ["s3", "ec2"],
+            "hard": ["s3", "ec2", "iam"]
+        }
 
-        #  anti-loop
-        if action_text in self.state["history"]:
-            reward = 0.05
+        needed = required[level].copy()
 
-        self.state["history"].append(action_text)
+        # 🔥 hidden IAM logic
+        if self.state.get("hidden_iam") and "iam" not in needed:
+            needed.append("iam")
 
-        
-        for issue in self.state["expected"]:
-            if issue not in self.state["fixed"]:
+        reward = 0.06  # default penalty
 
-                if issue == "s3" and "s3" in action_text:
-                    self.state["fixed"].append("s3")
-                    reward = 0.5 - (step * 0.01)
+        if not self.state["verified"]:
 
-                elif issue == "ec2" and ("port" in action_text or "ssh" in action_text):
-                    self.state["fixed"].append("ec2")
-                    reward = 0.5 - (step * 0.01)
+            # 🔧 FIX S3
+            if "s3" not in fixed and "s3" in action_text:
+                fixed.append("s3")
+                reward = 0.56
 
-                elif issue == "iam" and "iam" in action_text:
-                    self.state["fixed"].append("iam")
-                    reward = 0.5 - (step * 0.01)
+            # 🔧 FIX EC2
+            elif "ec2" not in fixed and ("port" in action_text or "ssh" in action_text):
+                fixed.append("ec2")
+                reward = 0.57
 
-                elif any(k in action_text for k in ["s3", "port", "iam"]):
-                    reward = 0.2
-
+            # 🔧 FIX IAM
+            elif "iam" not in fixed and "iam" in action_text:
+                if level == "hard" or self.state.get("hidden_iam"):
+                    fixed.append("iam")
+                    reward = 0.59
                 else:
-                    reward = 0.05
+                    reward = 0.06
 
-                break
+            # 🔍 VERIFY
+            elif "verify" in action_text:
+                self.state["verify_attempted"] = True
 
-        #  HIDDEN  (ONLY HARD)
-        if len(self.state["expected"]) >= 3:
-            if "s3" in self.state["fixed"] and "iam" not in self.state["expected"]:
-                if "iam" not in self.state["fixed"] and step == 2:
-                    self.state["expected"].append("iam")
+                if all(issue in fixed for issue in needed):
+                    self.state["verified"] = True
+                    reward = 0.88
+                else:
+                    reward = 0.06
 
-        #  VERIFY PHASE
-        if set(self.state["fixed"]) == set(self.state["expected"]):
-            if "verify" in action_text:
-                reward = 0.9 - (step * 0.01)
-                reward = max(0.6, reward)  # keep strong reward
-                self.state["verified"] = True
+            else:
+                reward = 0.05
 
-        done = self.state["verified"] or step >= 6
+        done = self.state["verified"] or self.state["step_count"] >= 6
 
         observation = Observation(
             resources=self.state["resources"],
-            issues_found=self.state["fixed"],
-            step_count=step
+            issues_found=fixed,
+            step_count=self.state["step_count"]
         )
 
         return observation, reward, done, {}
