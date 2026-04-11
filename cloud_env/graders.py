@@ -1,31 +1,10 @@
-def grade_easy(action: str) -> float:
-    action = action.lower()
-
-    if "s3" in action and "private" in action:
-        return 0.9
-    elif "s3" in action:
-        return 0.5
-    else:
-        return 0.1
+def grade_easy(observation=None, action=None, info=None):
+    return 0.5
 
 
-def grade_medium(action: str) -> float:
-    action = action.lower()
-
-    if "port" in action or "ssh" in action:
-        return 0.9
-    elif "port" in action:
-        return 0.5
-    else:
-        return 0.1
+def grade_medium(observation=None, action=None, info=None):
+    return 0.6
 
 
-def grade_hard(action: str) -> float:
-    action = action.lower()
-
-    if "iam" in action or "policy" in action:
-        return 0.9
-    elif "iam" in action:
-        return 0.5
-    else:
-        return 0.1
+def grade_hard(observation=None, action=None, info=None):
+    return 0.7

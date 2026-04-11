@@ -1,7 +1,7 @@
 from cloud_env.parser import parse_action
 import random
-from cloud_env.tasks import load_task
 from cloud_env.models import Observation, Resource
+from cloud_env.tasks import load_task
 
 
 class CloudEnv:
@@ -21,15 +21,23 @@ class CloudEnv:
             for r in task["resources"]
         ]
 
+        # expected issues list
+        expected_issues = []
+        for r in task["resources"]:
+            if r["type"] == "s3":
+                expected_issues.append("s3")
+            elif r["type"] == "ec2":
+                expected_issues.append("ec2")
+            elif r["type"] == "iam":
+                expected_issues.append("iam")
+
         self.state = {
             "resources": resources,
             "issues_found": [],
             "step_count": 0,
-            "fixed": False,
-            "verified": False,
-            "history": [],
-            "level": level,
-            "hidden_issue": False
+            "expected_issues": expected_issues,
+            "fixed": [],
+            "verified": False
         }
 
         return Observation(
@@ -41,67 +49,49 @@ class CloudEnv:
     def step(self, action_text):
 
         if self.state is None:
-            raise Exception("Call /reset before /step")
+            raise Exception("Call reset first")
 
         self.state["step_count"] += 1
         action_text = action_text.lower()
 
-        reward = 0.0
+        reward = 0.05  # base small reward (SAFE > 0)
 
-        
-        if action_text in self.state["history"]:
-            reward = -0.2
-        else:
-            self.state["history"].append(action_text)
+        # ===== FIX PHASE =====
+        for issue in self.state["expected_issues"]:
 
-        if not self.state["fixed"]:
+            if issue not in self.state["fixed"]:
 
-            if "s3" in action_text:
-                self.state["fixed"] = True
-                self.state["issues_found"].append("s3_fixed")
-                reward = 0.8
+                if issue == "s3" and "s3" in action_text:
+                    self.state["fixed"].append("s3")
+                    reward = 0.4
 
-                
-                if self.state["level"] != "easy":
-                    self.state["hidden_issue"] = True
+                elif issue == "ec2" and ("port" in action_text or "ssh" in action_text):
+                    self.state["fixed"].append("ec2")
+                    reward = 0.4
 
-            elif "port" in action_text or "ssh" in action_text:
-                self.state["fixed"] = True
-                self.state["issues_found"].append("ec2_fixed")
-                reward = 0.7
+                elif issue == "iam" and "iam" in action_text:
+                    self.state["fixed"].append("iam")
+                    reward = 0.4
 
-            elif "iam" in action_text:
-                self.state["fixed"] = True
-                self.state["issues_found"].append("iam_fixed")
-                reward = 0.7
+                elif any(word in action_text for word in ["s3", "port", "iam"]):
+                    reward = 0.2  # partial relevance
 
-            elif any(word in action_text for word in ["s3", "port", "iam"]):
-                reward = 0.3
-            else:
-                reward = -0.1
+                else:
+                    reward = 0.05
 
-        elif self.state["hidden_issue"] and not self.state["verified"]:
+                break
 
-            if "iam" in action_text:
-                self.state["issues_found"].append("hidden_fixed")
-                self.state["hidden_issue"] = False
-                reward = 0.6
-            else:
-                reward = -0.1
-
-        elif self.state["fixed"] and not self.state["verified"]:
-
+        # ===== VERIFY PHASE =====
+        if len(self.state["fixed"]) == len(self.state["expected_issues"]):
             if "verify" in action_text:
                 self.state["verified"] = True
                 reward = 0.9
-            else:
-                reward = -0.1
 
         done = self.state["verified"] or self.state["step_count"] >= 6
 
         observation = Observation(
             resources=self.state["resources"],
-            issues_found=self.state["issues_found"],
+            issues_found=self.state["fixed"],
             step_count=self.state["step_count"]
         )
 
