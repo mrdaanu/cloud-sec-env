@@ -7,7 +7,7 @@ import random
 class CloudEnv:
 
     def __init__(self):
-        self.state = None
+        self._state = None  # ✅ renamed (fix conflict)
 
     def reset(self, level="easy"):
         task = load_task(level)
@@ -21,13 +21,13 @@ class CloudEnv:
             for r in task["resources"]
         ]
 
-        # 🔥 Hidden IAM (safe randomness)
+        # 🔥 Hidden IAM
         hidden_iam = False
         if level in ["medium", "hard"]:
             if random.random() < 0.4:
                 hidden_iam = True
 
-        self.state = {
+        self._state = {
             "resources": resources,
             "issues_found": [],
             "step_count": 0,
@@ -45,14 +45,14 @@ class CloudEnv:
 
     def step(self, action_text):
 
-        if self.state is None:
+        if self._state is None:
             raise Exception("Call reset() first")
 
-        self.state["step_count"] += 1
+        self._state["step_count"] += 1
         action_text = action_text.lower()
 
-        fixed = self.state["issues_found"]
-        level = self.state["level"]
+        fixed = self._state["issues_found"]
+        level = self._state["level"]
 
         required = {
             "easy": ["s3"],
@@ -63,12 +63,12 @@ class CloudEnv:
         needed = required[level].copy()
 
         # 🔥 hidden IAM logic
-        if self.state.get("hidden_iam") and "iam" not in needed:
+        if self._state.get("hidden_iam") and "iam" not in needed:
             needed.append("iam")
 
-        reward = 0.06  # default penalty
+        reward = 0.06
 
-        if not self.state["verified"]:
+        if not self._state["verified"]:
 
             # 🔧 FIX S3
             if "s3" not in fixed and "s3" in action_text:
@@ -82,7 +82,7 @@ class CloudEnv:
 
             # 🔧 FIX IAM
             elif "iam" not in fixed and "iam" in action_text:
-                if level == "hard" or self.state.get("hidden_iam"):
+                if level == "hard" or self._state.get("hidden_iam"):
                     fixed.append("iam")
                     reward = 0.59
                 else:
@@ -90,10 +90,10 @@ class CloudEnv:
 
             # 🔍 VERIFY
             elif "verify" in action_text:
-                self.state["verify_attempted"] = True
+                self._state["verify_attempted"] = True
 
                 if all(issue in fixed for issue in needed):
-                    self.state["verified"] = True
+                    self._state["verified"] = True
                     reward = 0.88
                 else:
                     reward = 0.06
@@ -101,15 +101,21 @@ class CloudEnv:
             else:
                 reward = 0.05
 
-        done = self.state["verified"] or self.state["step_count"] >= 6
+        done = self._state["verified"] or self._state["step_count"] >= 6
 
         observation = Observation(
-            resources=self.state["resources"],
+            resources=self._state["resources"],
             issues_found=fixed,
-            step_count=self.state["step_count"]
+            step_count=self._state["step_count"]
         )
 
-        return observation, reward, done, {}
+        # ✅🔥 CRITICAL FIX (grader alignment)
+        info = {
+            "verified": self._state["verified"]
+        }
 
-    def state(self):
-        return self.state
+        return observation, reward, done, info
+
+    # ✅ renamed function (fix conflict)
+    def get_state(self):
+        return self._state
