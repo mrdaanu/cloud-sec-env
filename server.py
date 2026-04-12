@@ -1,49 +1,63 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 from cloud_env.environment import CloudEnv
-from cloud_env.models import Action
 
-app = FastAPI()
+# 🚀 CLEAN PROFESSIONAL FASTAPI APP
+app = FastAPI(
+    title="Cloud Security Fixer Environment",
+    description="""
+    🚀 A realistic Reinforcement Learning environment for cloud security remediation.
+
+    This environment simulates real-world cloud misconfigurations such as:
+    - Public S3 buckets
+    - Open SSH ports (EC2)
+    - Over-permissive IAM policies
+
+    🧠 Agent Responsibilities:
+    - Identify security issues
+    - Apply correct fixes step-by-step
+    - Verify final system state
+
+    🎯 Designed for evaluating autonomous AI agents in DevOps & cybersecurity workflows.
+    """,
+    version="1.0.0"
+)
+
+# 🔄 GLOBAL ENV INSTANCE
 env = CloudEnv()
 
 
-@app.get("/")
+# 📦 REQUEST MODEL
+class ActionRequest(BaseModel):
+    action: str
+
+
+# 🏠 HOME ROUTE
+@app.get("/", tags=["Info"])
 def home():
-    return {"message": "Cloud Security Environment Running"}
-
-
-@app.post("/reset")
-def reset():
-    obs = env.reset()
-
     return {
-        "observation": obs.model_dump(),   
-        "reward": 0.0,
-        "done": False,
-        "info": {}
+        "message": "Cloud Security Fixer Environment is running 🚀",
+        "endpoints": {
+            "reset": "POST /reset",
+            "step": "POST /step"
+        }
     }
 
 
-@app.post("/step")
-def step(action: Action):
-    try:
-        obs, reward, done, info = env.step(action.action)
+# 🔄 RESET ENVIRONMENT
+@app.post("/reset", tags=["Environment"])
+def reset(level: str = "easy"):
+    observation = env.reset(level)
+    return observation
 
-        return {
-            "observation": obs.model_dump(),   
-            "reward": float(reward),           
-            "done": bool(done),               
-            "info": info if isinstance(info, dict) else {}
-        }
 
-    except Exception as e:
-        
-        return {
-            "observation": {
-                "resources": [],
-                "issues_found": [],
-                "step_count": 0
-            },
-            "reward": -0.1,
-            "done": True,
-            "info": {"error": str(e)}
-        }
+# ⚡ STEP ACTION
+@app.post("/step", tags=["Environment"])
+def step(req: ActionRequest):
+    observation, reward, done, info = env.step(req.action)
+    return {
+        "observation": observation,
+        "reward": reward,
+        "done": done,
+        "info": info
+    }
