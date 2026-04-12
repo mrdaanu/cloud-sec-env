@@ -1,21 +1,25 @@
+def clamp(score):
+    return max(0.01, min(score, 0.99))
+
+
 def grade_easy(observation=None, action=None, info=None):
     if observation is None:
-        return 0.0
+        return 0.01  # ✅ fixed
 
     fixed = getattr(observation, "issues_found", [])
     verified = info.get("verified", False) if info else False
 
     if "s3" in fixed and verified:
-        return 0.9
+        return clamp(0.9)
     elif "s3" in fixed:
-        return 0.5
+        return clamp(0.5)
     else:
-        return 0.1
+        return clamp(0.1)
 
 
 def grade_medium(observation=None, action=None, info=None):
     if observation is None:
-        return 0.0
+        return 0.01  # ✅ fixed
 
     fixed = getattr(observation, "issues_found", [])
     verified = info.get("verified", False) if info else False
@@ -30,12 +34,12 @@ def grade_medium(observation=None, action=None, info=None):
     if verified and score >= 0.6:
         score += 0.3
 
-    return min(score, 0.95)
+    return clamp(score)
 
 
 def grade_hard(observation=None, action=None, info=None):
     if observation is None:
-        return 0.0
+        return 0.01  # ✅ fixed
 
     fixed = getattr(observation, "issues_found", [])
     verified = info.get("verified", False) if info else False
@@ -52,4 +56,4 @@ def grade_hard(observation=None, action=None, info=None):
     if verified and score >= 0.75:
         score += 0.2
 
-    return min(score, 0.95)
+    return clamp(score)
